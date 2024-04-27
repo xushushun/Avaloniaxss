@@ -903,7 +903,7 @@ namespace Avalonia.Win32
             // Ensure that the delegate doesn't get garbage collected by storing it as a field.
             _wndProcDelegate = WndProcMessageHandler;
 
-            _className = $"Avalonia-{Guid.NewGuid().ToString()}";
+            _className = $"Avalonia99-{Guid.NewGuid().ToString()}";
 
             // Unique DC helps with performance when using Gpu based rendering
             const ClassStyles windowClassStyle = ClassStyles.CS_OWNDC | ClassStyles.CS_HREDRAW | ClassStyles.CS_VREDRAW;

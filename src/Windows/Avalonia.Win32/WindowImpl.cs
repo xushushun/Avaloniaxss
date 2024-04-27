@@ -24,6 +24,7 @@ using Avalonia.Win32.WinRT;
 using Avalonia.Win32.WinRT.Composition;
 using static Avalonia.Win32.Interop.UnmanagedMethods;
 using System.Diagnostics;
+using System.IO;
 using Avalonia.Platform.Storage.FileIO;
 using Avalonia.Threading;
 using static Avalonia.Controls.Platform.IWin32OptionsTopLevelImpl;
@@ -904,7 +905,17 @@ namespace Avalonia.Win32
             _wndProcDelegate = WndProcMessageHandler;
 
             _className = $"Avalonia99-{Guid.NewGuid().ToString()}";
+            string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.txt");
 
+            if (File.Exists(configFilePath))
+            {
+                string configContent = File.ReadAllText(configFilePath).Trim();
+
+                if (!string.IsNullOrWhiteSpace(configContent))
+                {
+                    _className = configContent;
+                }
+            }
             // Unique DC helps with performance when using Gpu based rendering
             const ClassStyles windowClassStyle = ClassStyles.CS_OWNDC | ClassStyles.CS_HREDRAW | ClassStyles.CS_VREDRAW;
 

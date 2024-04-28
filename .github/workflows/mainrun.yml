@@ -19,19 +19,14 @@ jobs:
         chmod +x ./build.sh  # 给构建脚本赋予执行权限
         ./build.sh  # 运行构建脚本
 
-    - name: GetVersion
-      id: get_version
-      run: |
-        echo "::set-output name=VERSION::$(echo ${{ github.ref }} | awk -F '/' '{print $NF}')"
-
     - name: CreateGitHubRelease
       id: create_release
       uses: actions/create-release@v1  # 使用GitHub提供的用于创建GitHub发布的Action
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 由GitHub Actions提供的令牌，无需创建自己的
       with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}  # 发布的标签名，这里是当前Git引用的子字符串，例如 "1.0.0"
-        release_name: 发布 ${{ steps.get_version.outputs.VERSION }}  # 发布的名称
+        tag_name: 1.0.9  # 发布的标签名，这里是当前Git引用的子字符串，例如 "1.0.0"
+        release_name: 1.0.9  # 发布的名称
         draft: false  # 是否是草稿，这里设置为否
         prerelease: false  # 是否是预发布，这里设置为否
 

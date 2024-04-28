@@ -1,0 +1,41 @@
+name: BuildProjectrun
+on:
+  push:
+    branches:
+      - 'release/*'  # 只有推送到匹配 'release/*' 的分支时才触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 在最新的Ubuntu虚拟环境上运行
+
+    steps:
+    - name: CheckoutCode
+      uses: actions/checkout@v2  # 使用GitHub提供的用于检出代码的Action
+      with:
+        submodules: true  # 初始化并更新所有Git子模块
+
+    - name: RunBuildScript
+      run: |
+        chmod +x ./build.sh  # 给构建脚本赋予执行权限
+        ./build.sh  # 运行构建脚本
+
+    - name: GetVersion
+      id: get_version
+      run: |
+        echo "::set-output name=VERSION::$(echo ${{ github.ref }} | awk -F '/' '{print $NF}')"
+
+    - name: CreateGitHubRelease
+      id: create_release
+      uses: actions/create-release@v1  # 使用GitHub提供的用于创建GitHub发布的Action
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 由GitHub Actions提供的令牌，无需创建自己的
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}  # 发布的标签名，这里是当前Git引用的子字符串，例如 "1.0.0"
+        release_name: 发布 ${{ steps.get_version.outputs.VERSION }}  # 发布的名称
+        draft: false  # 是否是草稿，这里设置为否
+        prerelease: false  # 是否是预发布，这里设置为否
+
+    - name: BuildAndPushNuGetPackage
+      run: |
+        dotnet pack --configuration Release --output nupkgs  # 打包项目
+        dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json  # 将包推送到NuGet

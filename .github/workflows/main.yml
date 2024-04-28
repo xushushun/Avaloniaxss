@@ -1,37 +1,44 @@
-name: Build Project  # 工作流的名称
-on: [push]  # 触发工作流的事件，这里是每次推送到仓库时
+name: BuildProject
+on:
+  push:
+    branches:
+      - 'release/*'  # 只有推送到匹配 'release/*' 的分支时才触发
 
 jobs:
-  build:  # 工作的名称
-    runs-on: ubuntu-latest  # 工作运行的环境，这里是最新的 Ubuntu 虚拟环境
+  build:
+    runs-on: ubuntu-latest  # 在最新的Ubuntu虚拟环境上运行
 
-    steps:  # 工作流中的步骤
-    - name: Checkout code  # 步骤的名称，这里是检出代码
-      uses: actions/checkout@v2  # 使用的 Action，这里是 GitHub 提供的用于检出代码的 Action
+    steps:
+    - name: CheckoutCode
+      uses: actions/checkout@v2  # 使用GitHub提供的用于检出代码的Action
       with:
-        submodules: true  # 初始化和更新所有的 Git 子模块
+        submodules: true  # 初始化并更新所有Git子模块
 
-    - name: Setup .NET  # 设置 .NET 环境
-      uses: actions/setup-dotnet@v1  # 使用的 Action，这里是 GitHub 提供的用于设置 .NET 环境的 Action
-      with:
-        dotnet-version: '3.1.x'  # 设置 .NET 的版本，这里需要根据你的项目实际情况进行调整
-
-    - name: Run build script  # 运行构建脚本
+    - name: RunBuildScript
       run: |
-        chmod +x ./build.sh  # 使构建脚本具有执行权限
-        ./build.sh  # 执行构建脚本
+        chmod +x ./build.sh  # 给构建脚本赋予执行权限
+        ./build.sh  # 运行构建脚本
 
-    - name: Create GitHub Release  # 创建 GitHub 发布
-      uses: actions/create-release@v1  # 使用的 Action，这里是 GitHub 提供的用于创建 GitHub 发布的 Action
+    - name: GetVersion
+      id: get_version
+      run: |
+        echo "::set-output name=VERSION::$(echo ${{ github.ref }} | awk -F '/' '{print $NF}')"
+
+    - name: CreateGitHubRelease
+      id: create_release
+      uses: actions/create-release@v1  # 使用GitHub提供的用于创建GitHub发布的Action
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub Actions 提供的 token，无需自己创建
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 由GitHub Actions提供的令牌，无需创建自己的
       with:
-        tag_name: ${{ github.ref }}  # 发布的标签名，这里是当前的 Git 引用
-        release_name: Release ${{ github.ref }}  # 发布的名称
-        draft: false  # 是否为草稿，这里设置为否
-        prerelease: false  # 是否为预发布，这里设置为否
+        tag_name: ${{ steps.get_version.outputs.VERSION }}  # 发布的标签名，这里是当前Git引用的子字符串，例如 "1.0.0"
+        release_name: 发布 ${{ steps.get_version.outputs.VERSION }}  # 发布的名称
+        draft: false  # 是否是草稿，这里设置为否
+        prerelease: false  # 是否是预发布，这里设置为否
 
-    - name: Build and Push NuGet package  # 构建并推送 NuGet 包
+    - name: BuildAndPushNuGetPackage
       run: |
-        dotnet pack --configuration Release --output nupkgs  # 打包项目
-        dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json  # 推送包到 NuGet
+        echo "Pushing NuGet packages..."
+        for package in $(find $HOME/.nuget/packages -name "*.nupkg")
+        do
+          dotnet nuget push $package --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        done

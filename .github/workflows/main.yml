@@ -37,5 +37,8 @@ jobs:
 
     - name: BuildAndPushNuGetPackage
       run: |
-        dotnet pack --configuration Release --output nupkgs  # 打包项目
-        dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json  # 将包推送到NuGet
+        echo "Pushing NuGet packages..."
+        for package in $(find $HOME/.nuget/packages -name "*.nupkg")
+        do
+          dotnet nuget push $package --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        done

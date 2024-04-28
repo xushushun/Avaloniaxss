@@ -19,18 +19,23 @@ jobs:
         chmod +x ./build.sh  # 使构建脚本具有执行权限
         ./build.sh  # 执行构建脚本
 
+    - name: 获取版本号
+      id: get_version
+      run: |
+        echo "::set-output name=VERSION::$(echo ${{ github.ref }} | awk -F '/' '{print $NF}')"
+
     - name: 创建 GitHub 发布
       id: create_release
       uses: actions/create-release@v1  # 使用 GitHub 提供的用于创建 GitHub 发布的 Action
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub Actions 提供的 token，无需自己创建
       with:
-        tag_name: ${{ github.ref_name }}  # 发布的标签名，这里是当前的 Git 引用的子字符串，例如 "1.0.0"
-        release_name: Release ${{ github.ref_name }}  # 发布的名称
+        tag_name: ${{ steps.get_version.outputs.VERSION }}  # 发布的标签名，这里是当前的 Git 引用的子字符串，例如 "1.0.0"
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}  # 发布的名称
         draft: false  # 是否为草稿，这里设置为否
         prerelease: false  # 是否为预发布，这里设置为否
 
     - name: 构建并推送 NuGet 包
       run: |
         dotnet pack --configuration Release --output nupkgs  # 打包项目
-        dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json  # 推送包到 NuGe
+        dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json  # 推送包到 NuGet
